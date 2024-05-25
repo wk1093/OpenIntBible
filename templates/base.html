@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}Study Bible{% endblock %}</title>
+    <meta name="color-scheme" content="{{ color_scheme }}">
+    {% if dark_mode %}
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/dark.css') }}">
+    {% else %}
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/light.css') }}">
+    {% endif %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    {% block content %}{% endblock %}
+</body>

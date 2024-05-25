@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Study Bible - {{ book_name }} {{ chapter }}:{{ verse }}{% endblock %}
+
+{% block head %}
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    {% for i, word in words_enum %}
+        {% if i == sel_word %}
+            <p class="word selected">{{word.ST}} => {{word.transSBLcap}} ({{word.TBESG}})</p>
+        {% else %}
+            <p class="word">{{word.ST}} => {{word.transSBLcap}} ({{word.TBESG}})</p>
+        {% endif %}
+    {% endfor %}
+    <script>
+// when clicking on a word, redirect to the same page but with the word number
+// we can't directly just redirect, because we are an iframe
+document.querySelectorAll('p').forEach((word, index) => {
+    word.addEventListener('click', () => {
+        window.parent.location.href = '/ch/{{book}}/{{chapter}}?verse={{verse}}&word=' + index {{("+ '&dark=1'" if dark_mode else "+ '&dark=0'") | safe}}
+    })
+})
+
+// scroll saver
+let scrollPos = sessionStorage.getItem('p1_scrollPos')
+let book = sessionStorage.getItem('p1_book')
+let chapter = sessionStorage.getItem('p1_chapter')
+let verse = sessionStorage.getItem('p1_verse')
+
+if (scrollPos && book === '{{book}}' && chapter === '{{chapter}}' && verse === '{{verse}}') {
+    window.scrollTo(0, scrollPos)
+}
+
+window.addEventListener('beforeunload', () => {
+    sessionStorage.setItem('p1_scrollPos', window.scrollY)
+    sessionStorage.setItem('p1_book', {{book}})
+    sessionStorage.setItem('p1_chapter', {{chapter}})
+    sessionStorage.setItem('p1_verse', {{verse}})
+})
+    </script>
+{% endblock %}

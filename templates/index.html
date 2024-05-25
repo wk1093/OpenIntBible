@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Study Bible{% endblock %}
+
+{% block head %}
+    <style>
+        #layout {
+            min-height: 100%;
+        }
+    </style>
+    <!--[if lte IE 6]>
+    <style type="text/css">
+        #layout {
+            height: 100%;
+        }
+    </style>
+    <![endif]-->
+{% endblock %}
+
+{% block content %}
+    <div id="nav">
+        <a class="navtitle" href="/?dark={{1 if dark_mode else 0}}">StudyBible</a>
+        <form id="form">
+        <select id="book">
+            {% for i, name in book_enum %}
+                {% if is_new_testament(i+1) %}
+                    <option value="{{ i+1 }}">{{ name }}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+        <input type="number" id="chapter" min="1" value="1">
+        <button id="go">Go</button>
+        </form>
+        <button id="dark">Toggle Dark Mode</button>
+    </div>
+    <h1>Study Bible</h1>
+
+    <script>
+let bookSizes = {{book_sizes|safe}}
+document.querySelector('#book').addEventListener('change', () => {
+    let book = document.querySelector('#book').value
+    // set max chapter to the book size
+    document.querySelector('#chapter').setAttribute('max', bookSizes[book])
+
+})
+
+document.querySelector('#form').addEventListener('submit', (e) => {
+    e.preventDefault()
+    let book = document.querySelector('#book').value
+    let chapter = document.querySelector('#chapter').value
+    if (chapter > bookSizes[book]) {
+        chapter = bookSizes[book]
+    }
+    window.location.href = `/ch/${book}/${chapter}?verse=1&word=0{{('&dark=1' if dark_mode else '&dark=0') | safe}}`
+})
+
+document.querySelector('#dark').addEventListener('click', () => {
+    window.location.href = `/?dark={{1 if not dark_mode else 0}}`
+})
+    </script>
+{% endblock %}

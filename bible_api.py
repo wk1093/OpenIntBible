@@ -186,6 +186,7 @@ class GreekChapter:
 
 @cache
 def get_greek_chapter(book: int, chapter: int) -> GreekChapter:
+    print("loading greek chapter")
     words = []
     for row in greek_data():
         word = GreekWord(row)
