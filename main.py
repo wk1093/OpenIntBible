@@ -4,9 +4,7 @@ OpenIntBible - An Open-Source Interlinear Bible App for Windows, Mac, Linux, And
 This is a web Python app that uses Flask to serve the OpenIntBible web app.
 
 """
-import os
 from flask import Flask, render_template, request
-import time
 
 from functools import cache
 
@@ -72,12 +70,12 @@ def chapter(book, chapter):
             verse = v
             break
     if verse is not None:
-        left = f"<iframe src='/left/{book}/{chapter}/{sel_verse}?word={sel_word}{'&dark=1' if dark_mode else '&dark=0'}' width='100%' height='100%'></iframe>"
+        left = f"<iframe src='/left/{book}/{chapter}/{sel_verse}?word={sel_word}{'&dark=1' if dark_mode else '&dark=0'}' width='100%' height='100%' style=\"visibility:hidden;\" onload=\"this.style.visibility='visible';\"></iframe>"
 
     # bottom
     bottom = "<h2>An Error Occurred</h2>"
     if verse is not None:
-        bottom = f"<iframe src='/bottom/{book}/{chapter}/{sel_verse}/{sel_word}{'?dark=1' if dark_mode else '?dark=0'}' width='100%' height='100%'></iframe>"
+        bottom = f"<iframe src='/bottom/{book}/{chapter}/{sel_verse}/{sel_word}{'?dark=1' if dark_mode else '?dark=0'}' width='100%' height='100%' style=\"visibility:hidden;\" onload=\"this.style.visibility='visible';\"></iframe>"
 
     books = bible_api.get_book_names()
     book_sizes = bible_api.get_book_sizes()
@@ -200,6 +198,11 @@ button {{
     border: 1px solid #555;
     background-color: #222;
     color: white;  
+}}
+
+iframe {{
+    background-color: #333;
+    color: white;
 }}
 """
 
@@ -530,9 +533,6 @@ div {{
 </body>
 </html>
 """
-
-
-
 
 
 if __name__ == '__main__':
