@@ -10,7 +10,7 @@ from xml.etree import ElementTree as xml
 # Format:
 # LevinsohnClauseID	IT	LT	ST
 
-from functools import cache
+from fcache import cache
 
 
 csv_file = 'OpenGNT_version3_3.csv'
@@ -85,6 +85,12 @@ class GreekVerse:
 
     def __repr__(self):
         return f'{self.book} {self.chapter}:{self.verse_num}'
+
+    def sort_st(self):
+        self.words.sort(key=lambda x: x.STsortI)
+
+    def sort_lt(self):
+        self.words.sort(key=lambda x: x.LTsortI)
 
     def ST(self):
         # for each word in the verse, get the LevinsionClauseID

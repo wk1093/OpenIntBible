@@ -6,8 +6,7 @@ This is a web Python app that uses Flask to serve the OpenIntBible web app.
 """
 from flask import Flask, render_template, request
 
-from functools import cache
-
+from fcache import cache
 
 import bible_api
 
@@ -97,6 +96,8 @@ def left(book, chapter, verse):
             break
     if vs is None:
         return "<h1>An Error Occurred</h1><p>Verse not found</p>"
+
+    vs.sort_st()
 
     book_name = bible_api.get_book_names()[book-1]
 
