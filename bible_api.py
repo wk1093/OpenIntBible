@@ -1,6 +1,7 @@
 import csv
 import io
 from xml.etree import ElementTree as xml
+import inspect
 # OpenGNT_version3_3.csv is a csv file containing the Greek New Testament
 # with Strong's numbers and morphology
 # Format:
@@ -14,7 +15,6 @@ from fcache import cache
 
 
 csv_file = 'OpenGNT_version3_3.csv'
-
 
 def get_greek_data():
     with open(csv_file, 'rb') as f:
@@ -30,12 +30,17 @@ def get_eng_data():
             for row in reader:
                 yield row
 
+@cache
 def greek_data():
     return list(get_greek_data())
 
+@cache
 def eng_data():
     return list(get_eng_data())
 
+
+def isf(x):
+    return inspect.isroutine(x) or inspect.isclass(x)
 
 class GreekWord:
     def __init__(self, csvdata):
@@ -63,10 +68,10 @@ class GreekWord:
         self.Note, self.Mvar, self.Mlexeme, self.Mrmac, self.Msn, self.MTBESG = csvdata[12][1:-1].split('｜')
 
     def __str__(self):
-        return f'{self.lexeme} ({self.sn})'
+        return "GreekWord(" + ', '.join(f'{attr}={getattr(self, attr)}' for attr in dir(self) if not attr.startswith('__') and not isf(getattr(self, attr))) + ")"
 
     def __repr__(self):
-        return f'{self.lexeme} ({self.sn})'
+        return "GreekWord(" + ', '.join(f'{attr}={getattr(self, attr)}' for attr in dir(self) if not attr.startswith('__') and not isf(getattr(self, attr))) + ")"
 
 
 class GreekVerse:
@@ -81,10 +86,10 @@ class GreekVerse:
         self.verse_num = words[0].Verse
 
     def __str__(self):
-        return f'{self.book} {self.chapter}:{self.verse_num}'
+        return "GreekVerse(" + ', '.join(f'{attr}={getattr(self, attr)}' for attr in dir(self) if not attr.startswith('__') and not isf(getattr(self, attr))) + ")"
 
     def __repr__(self):
-        return f'{self.book} {self.chapter}:{self.verse_num}'
+        return "GreekVerse(" + ', '.join(f'{attr}={getattr(self, attr)}' for attr in dir(self) if not attr.startswith('__') and not isf(getattr(self, attr))) + ")"
 
     def sort_st(self):
         self.words.sort(key=lambda x: x.STsortI)
@@ -140,10 +145,10 @@ class GreekSection:
         self.chapter = verses[0].chapter
 
     def __str__(self):
-        return f'{self.book} {self.chapter}'
+        return "GreekSection(" + ', '.join(f'{attr}={getattr(self, attr)}' for attr in dir(self) if not attr.startswith('__') and not isf(getattr(self, attr))) + ")"
 
     def __repr__(self):
-        return f'{self.book} {self.chapter}'
+        return "GreekSection(" + ', '.join(f'{attr}={getattr(self, attr)}' for attr in dir(self) if not attr.startswith('__') and not isf(getattr(self, attr))) + ")"
 
     def ST(self):
         final = ""
@@ -181,10 +186,10 @@ class GreekChapter:
         self.chapter = verses[0].chapter
 
     def __str__(self):
-        return f'{self.book} {self.chapter}'
+        return "GreekChapter(" + ', '.join(f'{attr}={getattr(self, attr)}' for attr in dir(self) if not attr.startswith('__') and not isf(getattr(self, attr))) + ")"
 
     def __repr__(self):
-        return f'{self.book} {self.chapter}'
+        return "GreekChapter(" + ', '.join(f'{attr}={getattr(self, attr)}' for attr in dir(self) if not attr.startswith('__') and not isf(getattr(self, attr))) + ")"
 
     def range(self, start: int, end: int):
         return GreekSection(self.verses[start:end])
@@ -201,6 +206,8 @@ def get_greek_chapter(book: int, chapter: int) -> GreekChapter:
     # group the words into verses
     verses = []
     cur_verse = []
+    if not words:
+        raise ValueError(f"Chapter {chapter} not found in book {book}")
     verse_num = words[0].Verse
     for word in words:
         if word.Verse != verse_num:
@@ -275,4 +282,19 @@ def get_book_names():
     return ['Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy', 'Joshua', 'Judges', 'Ruth', '1 Samuel', '2 Samuel', '1 Kings', '2 Kings', '1 Chronicles', '2 Chronicles', 'Ezra', 'Nehemiah', 'Esther', 'Job', 'Psalms', 'Proverbs', 'Ecclesiastes', 'Song of Solomon', 'Isaiah', 'Jeremiah', 'Lamentations', 'Ezekiel', 'Daniel', 'Hosea', 'Joel', 'Amos', 'Obadiah', 'Jonah', 'Micah', 'Nahum', 'Habakkuk', 'Zephaniah', 'Haggai', 'Zechariah', 'Malachi', 'Matthew', 'Mark', 'Luke', 'John', 'Acts', 'Romans', '1 Corinthians', '2 Corinthians', 'Galatians', 'Ephesians', 'Philippians', 'Colossians', '1 Thessalonians', '2 Thessalonians', '1 Timothy', '2 Timothy', 'Titus', 'Philemon', 'Hebrews', 'James', '1 Peter', '2 Peter', '1 John', '2 John', '3 John', 'Jude', 'Revelation']
 
 def get_book_sizes():
-    return [50, 40, 27, 36, 34, 24, 21, 4, 31, 24, 22, 25, 29, 36, 10, 13, 10, 42, 150, 31, 12, 8, 66, 52, 5, 48, 12, 14, 3, 9, 1, 4, 7, 3, 3, 3, 2, 14, 28, 16, 16, 13, 6, 6, 4, 4, 5, 3, 6, 4, 3, 1, 13, 5, 5, 3, 5, 1, 1, 1, 1, 22]
+    return [50, 40, 27, 36, 34, 24, 21, 4, 31, 24, 22, 25, 29, 36, 10, 13, 10, 42, 150, 31, 12, 8, 66, 52, 5, 48, 12, 14, 3, 9, 1, 4, 7, 3, 3, 3, 2, 14, 4, 28, 16, 24, 21, 28, 16, 16, 13, 6, 6, 4, 4, 5, 3, 6, 4, 3, 1, 13, 5, 5, 3, 5, 1, 1, 1, 22]
+
+@cache
+def to_html(verses):
+    print("building html...")
+    # for verse in gch.verses:
+    #     if verse.verse_num != int(selected_verse):
+    #         main += f"""<span class="verse" id="verse{verse.verse_num}"><b>{verse.verse_num}</b> {verse.ST()}</span>"""
+    #     else:
+    #         main += f"""<span class="verse selected" id="verse{verse.verse_num}"><b>{verse.verse_num}</b> {verse.ST()}</span>"""
+    # that is the old code, but it is too slow
+    # this new code is faster
+    main = ""
+    for verse in verses.verses:
+        main += f"""<span class="verse" id="verse{verse.verse_num}"><b>{verse.verse_num}</b> {verse.ST()}</span>"""
+    return main

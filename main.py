@@ -1,9 +1,4 @@
-"""
-OpenIntBible - An Open-Source Interlinear Bible App for Windows, Mac, Linux, Android, and Web
 
-This is a web Python app that uses Flask to serve the OpenIntBible web app.
-
-"""
 from flask import Flask, render_template, request
 
 from fcache import cache
@@ -21,22 +16,6 @@ def index():
     book_sizes = bible_api.get_book_sizes()
     books = bible_api.get_book_names()
     return render_template('index.html', is_new_testament=bible_api.is_new_testament, book_enum=enumerate(books), dark_mode=dark_mode, book_sizes=book_sizes)
-
-@cache
-def to_html(verses):
-    print("building html...")
-    # for verse in gch.verses:
-    #     if verse.verse_num != int(selected_verse):
-    #         main += f"""<span class="verse" id="verse{verse.verse_num}"><b>{verse.verse_num}</b> {verse.ST()}</span>"""
-    #     else:
-    #         main += f"""<span class="verse selected" id="verse{verse.verse_num}"><b>{verse.verse_num}</b> {verse.ST()}</span>"""
-    # that is the old code, but it is too slow
-    # this new code is faster
-    main = ""
-    for verse in verses.verses:
-        main += f"""<span class="verse" id="verse{verse.verse_num}"><b>{verse.verse_num}</b> {verse.ST()}</span>"""
-    return main
-
 
 @app.route('/ch/<int:book>/<int:chapter>')
 def chapter(book, chapter):
@@ -60,7 +39,7 @@ def chapter(book, chapter):
     # check if we have a miss, if so, return a loading page
     gch = bible_api.get_greek_chapter(book, chapter)
 
-    main = to_html(gch)
+    main = bible_api.to_html(gch)
 
     verse = None
     for v in gch.verses:
@@ -126,4 +105,10 @@ def bottom(book, chapter, verse, word):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # app.run(debug=True)
+    # cache the entire bible
+    print("Caching the entire Bible...")
+    for book in range(40, 67):
+        for chapter in range(1, bible_api.get_book_sizes()[book-1]+1):
+            print(f"Caching {bible_api.get_book_names()[book-1]} {chapter}")
+            bible_api.to_html(bible_api.get_greek_chapter(book, chapter))
