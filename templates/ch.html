@@ -100,7 +100,7 @@ let bookSizes = {{book_sizes|safe}}
 document.querySelector('#book').addEventListener('change', () => {
     let book = document.querySelector('#book').value
     // set max chapter to the book size
-    document.querySelector('#chapter').setAttribute('max', bookSizes[book])
+    document.querySelector('#chapter').setAttribute('max', bookSizes[book-1])
     document.querySelector('#chapter').value = 1
 
 })
