@@ -11,6 +11,7 @@
 
         .container {
             padding: 5px 10px;
+            display: flow;
         }
     </style>
 {% endblock %}
@@ -22,6 +23,11 @@
     <h3>Brief Definition</h3>
     <p>{{w.TBESG}}</p>
     <h3>Strong's Definition</h3>
-    <p>{{s.strongs_def}}</p>
+    <p>{{s.strongs_str}}</p>
+    <h3>Translated as (KJV)</h3>
+    <p>{{s.kjv_def}}</p>
+    <h3>Usage</h3>
+    <p>{{s.usage}}</p>
+
     </div>
 {% endblock %}

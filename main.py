@@ -103,12 +103,8 @@ def bottom(book, chapter, verse, word):
 
     return render_template('bottom.html', book=book, chapter=chapter, verse=verse, word=word, dark_mode=dark_mode, w=w, s=s)
 
-
 if __name__ == '__main__':
-    # app.run(debug=True)
-    # cache the entire bible
-    print("Caching the entire Bible...")
-    for book in range(40, 67):
-        for chapter in range(1, bible_api.get_book_sizes()[book-1]+1):
-            print(f"Caching {bible_api.get_book_names()[book-1]} {chapter}")
-            bible_api.to_html(bible_api.get_greek_chapter(book, chapter))
+    app.run(debug=True)
+
+    # ch = bible_api.get_greek_chapter(40, 20)
+    # bible_api.to_html(ch)
