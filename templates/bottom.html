@@ -23,15 +23,13 @@
         <p><b>Pronounciation:</b> {{s.pronunciation}}</p>
         {% endif %}
         {% if s.lex %}
-        <h3>Brief Definition</h3>
-        <p>{{w.DEF}}</p>
+        <p><b>Brief Definition:</b> {{w.DEF}}</p>
         <h3>Strong's Definition</h3>
         <p>{{s.strongs_str}}</p>
         <h3>Translated as (KJV)</h3>
         <p>{{s.kjv_def}}</p>
         {% else %}
-        <h3>Possible Definition</h3>
-        <p>{{w.DEF}}</p>
+        <p><b>Possible Definition:</b> {{w.DEF}}</p>
         {% endif %}
 
 
