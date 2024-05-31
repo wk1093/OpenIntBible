@@ -1,7 +1,4 @@
-
 from flask import Flask, render_template, request
-
-from fcache import cache
 
 import bible_api
 
