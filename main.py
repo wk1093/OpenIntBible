@@ -2,11 +2,11 @@ from flask import Flask, render_template, request
 
 import bible_api
 
-
 app = Flask(__name__)
 
+
 @app.route('/')
-def index():
+def r_index():
     dark_mode = False
     if request.args.get('dark') is not None and request.args.get('dark') != "0":
         dark_mode = True
@@ -14,8 +14,9 @@ def index():
     books = bible_api.get_book_names()
     return render_template('index.html', book_enum=enumerate(books), dark_mode=dark_mode, book_sizes=book_sizes)
 
+
 @app.route('/ch/<int:book>/<int:chapter>')
-def chapter(book, chapter):
+def r_chapter(book, chapter):
     dark_mode = False
     if request.args.get('dark') is not None and request.args.get('dark') != "0":
         dark_mode = True
@@ -32,7 +33,6 @@ def chapter(book, chapter):
     sel_verse = int(selected_verse)
     sel_word = int(selected_word)
 
-
     gch = bible_api.get_chapter(book, chapter)
 
     main = bible_api.to_html(gch)
@@ -48,12 +48,15 @@ def chapter(book, chapter):
     books = bible_api.get_book_names()
     book_sizes = bible_api.get_book_sizes()
 
-    book_name = books[book-1]
+    book_name = books[book - 1]
 
-    return render_template('ch.html', book=book, chapter=chapter, dark_mode=dark_mode, book_enum=enumerate(books), main=main, sel_verse=sel_verse, sel_word=sel_word, book_sizes=book_sizes, book_name=book_name, is_new_testament=bible_api.is_new_testament)
+    return render_template('ch.html', book=book, chapter=chapter, dark_mode=dark_mode, book_enum=enumerate(books),
+                           main=main, sel_verse=sel_verse, sel_word=sel_word, book_sizes=book_sizes,
+                           book_name=book_name, is_new_testament=bible_api.is_new_testament)
+
 
 @app.route('/left/<int:book>/<int:chapter>/<int:verse>')
-def left(book, chapter, verse):
+def r_left(book, chapter, verse):
     dark_mode = False
     if request.args.get('dark') is not None and request.args.get('dark') != "0":
         dark_mode = True
@@ -74,13 +77,15 @@ def left(book, chapter, verse):
 
     vs.sort_st()
 
-    book_name = bible_api.get_book_names()[book-1]
+    book_name = bible_api.get_book_names()[book - 1]
 
-    return render_template('left.html', book=book, chapter=chapter, verse=verse, dark_mode=dark_mode, words_enum=enumerate(vs.words),
+    return render_template('left.html', book=book, chapter=chapter, verse=verse, dark_mode=dark_mode,
+                           words_enum=enumerate(vs.words),
                            sel_word=sel_word, book_name=book_name, is_new_testament=bible_api.is_new_testament)
 
+
 @app.route('/bottom/<int:book>/<int:chapter>/<int:verse>/<int:word>')
-def bottom(book, chapter, verse, word):
+def r_bottom(book, chapter, verse, word):
     dark_mode = False
     if request.args.get('dark') is not None and request.args.get('dark') != "0":
         dark_mode = True
@@ -97,7 +102,9 @@ def bottom(book, chapter, verse, word):
     w = vs.words[word]
     s = bible_api.get_strongs(w.sn, w)
 
-    return render_template('bottom.html', book=book, chapter=chapter, verse=verse, word=word, dark_mode=dark_mode, w=w, s=s)
+    return render_template('bottom.html', book=book, chapter=chapter, verse=verse, word=word, dark_mode=dark_mode, w=w,
+                           s=s)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
