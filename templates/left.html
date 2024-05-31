@@ -14,9 +14,9 @@
 {% block content %}
     {% for i, word in words_enum %}
         {% if i == sel_word %}
-            <p class="word selected">{{word.ST}} => {{word.transSBLcap}} ({{word.TBESG}})</p>
+            <p class="word selected">{{word.ST}} => {{word.transSBLcap}} {% if not word.badStrongs %}({{word.TBESG}}){% endif %}</p>
         {% else %}
-            <p class="word">{{word.ST}} => {{word.transSBLcap}} ({{word.TBESG}})</p>
+            <p class="word">{{word.ST}} => {{word.transSBLcap}} {% if not word.badStrongs %}({{word.TBESG}}){% endif %}</p>
         {% endif %}
     {% endfor %}
     <script>

@@ -15,7 +15,7 @@ def index():
         dark_mode = True
     book_sizes = bible_api.get_book_sizes()
     books = bible_api.get_book_names()
-    return render_template('index.html', is_new_testament=bible_api.is_new_testament, book_enum=enumerate(books), dark_mode=dark_mode, book_sizes=book_sizes)
+    return render_template('index.html', book_enum=enumerate(books), dark_mode=dark_mode, book_sizes=book_sizes)
 
 @app.route('/ch/<int:book>/<int:chapter>')
 def chapter(book, chapter):
@@ -35,9 +35,8 @@ def chapter(book, chapter):
     sel_verse = int(selected_verse)
     sel_word = int(selected_word)
 
-    # these 2 functions are slow, so we cache them
-    # check if we have a miss, if so, return a loading page
-    gch = bible_api.get_greek_chapter(book, chapter)
+
+    gch = bible_api.get_chapter(book, chapter)
 
     main = bible_api.to_html(gch)
 
@@ -67,7 +66,7 @@ def left(book, chapter, verse):
 
     sel_word = int(selected_word)
 
-    gch = bible_api.get_greek_chapter(book, chapter)
+    gch = bible_api.get_chapter(book, chapter)
     vs = None
     for v in gch.verses:
         if v.verse_num == verse:
@@ -90,7 +89,7 @@ def bottom(book, chapter, verse, word):
         dark_mode = True
     # strongs definition and other details about the word
     # for now just put the lexeme and other info
-    gch = bible_api.get_greek_chapter(book, chapter)
+    gch = bible_api.get_chapter(book, chapter)
     vs = None
     for v in gch.verses:
         if v.verse_num == verse:
@@ -99,7 +98,7 @@ def bottom(book, chapter, verse, word):
     if vs is None:
         return "An error occurred"
     w = vs.words[word]
-    s = bible_api.StrongsDefinition(w.sn)
+    s = bible_api.get_strongs(w.sn, w)
 
     return render_template('bottom.html', book=book, chapter=chapter, verse=verse, word=word, dark_mode=dark_mode, w=w, s=s)
 

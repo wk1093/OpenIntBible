@@ -18,16 +18,22 @@
 
 {% block content %}
     <div class="container">
-    <h2><b>{{w.transSBLcap}}</b> ({{w.lexeme}}) {{w.sn}} ({{s.greek}})</h2>
-    <p><b>Pronounciation:</b> {{s.pronunciation}}</p>
-    <h3>Brief Definition</h3>
-    <p>{{w.TBESG}}</p>
-    <h3>Strong's Definition</h3>
-    <p>{{s.strongs_str}}</p>
-    <h3>Translated as (KJV)</h3>
-    <p>{{s.kjv_def}}</p>
-    <h3>Usage</h3>
-    <p>{{s.usage}}</p>
+        <h2><b>{{w.transSBLcap}}</b> ({{w.lexeme}}) {{w.sn}} {% if s.lex %}({{s.lex}}){% endif %}</h2>
+        {% if s.pronunciation %}
+        <p><b>Pronounciation:</b> {{s.pronunciation}}</p>
+        {% endif %}
+        {% if s.lex %}
+        <h3>Brief Definition</h3>
+        <p>{{w.DEF}}</p>
+        <h3>Strong's Definition</h3>
+        <p>{{s.strongs_str}}</p>
+        <h3>Translated as (KJV)</h3>
+        <p>{{s.kjv_def}}</p>
+        {% else %}
+        <h3>Possible Definition</h3>
+        <p>{{w.DEF}}</p>
+        {% endif %}
+
 
     </div>
 {% endblock %}

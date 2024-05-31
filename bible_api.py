@@ -1,20 +1,44 @@
 import csv
 import io
-from xml.etree import ElementTree as xml
-import inspect
+import os
 from dataclasses import dataclass
-# OpenGNT_version3_3.csv is a csv file containing the Greek New Testament
-# with Strong's numbers and morphology
-# Format:
-# OGNTsort	TANTTsort	FEATURESsort1	LevinsohnClauseID	OTquotation	〔BGBsortI｜LTsortI｜STsortI〕	〔Book｜Chapter｜Verse〕	〔OGNTk｜OGNTu｜OGNTa｜lexeme｜rmac｜sn〕	〔BDAGentry｜EDNTentry｜MounceEntry｜GoodrickKohlenbergerNumbers｜LN-LouwNidaNumbers〕
-
-# OpenGNT_TranslationByClause.csv is a csv file containing the Greek New Testament translated into English
-# Format:
-# LevinsohnClauseID	IT	LT	ST
-
 from fcache import cache, mem_cache
 import json
+import time
+import zipfile
 
+# Greek:
+# OpenGNT_TranslationByClause.csv
+# OpenGNT_version3_3.csv
+# strongs-greek-dictionary.js
+# strongsgreek.dat
+
+# Hebrew:
+# BHSA-with-extended-features.csv
+# BHSA-clause-translation.csv
+# strongs-hebrew-dictionary.js
+
+if os.path.exists('data') and not os.path.exists('data.zip'):
+    print("zipping data...")
+    zipf = zipfile.ZipFile('data.zip', 'w', zipfile.ZIP_DEFLATED)
+    for root, dirs, files in os.walk('data'):
+        for file in files:
+            zipf.write(os.path.join(root, file), os.path.relpath(os.path.join(root, file), os.path.join('data', '..')))
+    zipf.close()
+    print("data.zip created")
+
+if not os.path.exists('data'):
+    print("unzipping data...")
+    # unzip data.zip
+    with zipfile.ZipFile('data.zip', 'r') as zip_ref:
+        zip_ref.extractall('.')
+    print("data unzipped")
+
+
+
+
+print("preloading...")
+preloadtime = time.time()
 
 def get_greek_data():
     with open('data/OpenGNT_version3_3.csv', 'rb') as f:
@@ -23,7 +47,7 @@ def get_greek_data():
             for row in reader:
                 yield row
 
-def get_eng_data():
+def get_greek_clause_data():
     with open('data/OpenGNT_TranslationByClause.csv', 'rb') as f:
         with io.TextIOWrapper(f, encoding='utf-8') as text_file:
             reader = csv.reader(text_file, delimiter='\t')
@@ -31,7 +55,7 @@ def get_eng_data():
                 yield row
 
 @cache
-def get_strongs_data() -> dict:
+def get_greek_strongs_data() -> dict:
     with open('data/strongs-greek-dictionary.js', 'rb') as f:
         with io.TextIOWrapper(f, encoding='utf-8') as text_file:
             data = text_file.read()
@@ -43,26 +67,49 @@ def get_strongs_data() -> dict:
 
     return data
 
+def get_hebrew_data():
+    with open('data/BHSA-with-extended-features.csv', 'rb') as f:
+        with io.TextIOWrapper(f, encoding='utf-8') as text_file:
+            reader = csv.reader(text_file, delimiter='\t')
+            for row in reader:
+                yield row
+
+def get_hebrew_clause_data():
+    with open('data/BHSA-clause-translation.csv', 'rb') as f:
+        with io.TextIOWrapper(f, encoding='utf-8') as text_file:
+            reader = csv.reader(text_file, delimiter='\t')
+            for row in reader:
+                yield row
 
 @cache
+def get_hebrew_strongs_data():
+    with open('data/strongs-hebrew-dictionary.js', 'rb') as f:
+        with io.TextIOWrapper(f, encoding='utf-8') as text_file:
+            data = text_file.read()
+            a_t = "var strongsHebrewDictionary = "
+            a = data.find(a_t)
+            b = data.find(";\n\nmodule.exports = strongsHebrewDictionary;")
+            data = data[a+len(a_t):b]
+            data = json.loads(data)
+    return data
+
 def greek_data():
     return list(get_greek_data())
 
 greek_dat = greek_data()
 
-@cache
-def eng_data():
+def greek_clause_data():
     data = {}
-    for row in get_eng_data():
+    for row in get_greek_clause_data():
         data[row[0].strip().lower()] = row
     return data
 
-eng_dat = eng_data()
+greek_clause_dat = greek_clause_data()
 
 @cache
-def strongs_data():
+def greek_strongs_data():
     # use strongsgreek.dat to get the pronunciation and other details not in the json file
-    dat = get_strongs_data()
+    dat = get_greek_strongs_data()
     with open('data/strongsgreek.dat', 'rb') as f:
         with io.TextIOWrapper(f, encoding='utf-8') as text_file:
             data = text_file.read()
@@ -87,10 +134,31 @@ def strongs_data():
                 dat[key]['pronunciation'] = pron
     return dat
 
-strongs_dat = strongs_data()
+greek_strongs_dat = greek_strongs_data()
 
-def isf(x):
-    return inspect.isroutine(x) or inspect.isclass(x)
+def hebrew_data():
+    return list(get_hebrew_data())[1:]
+
+hebrew_dat = hebrew_data()
+
+
+def hebrew_clause_data():
+    data = {}
+    for row in get_hebrew_clause_data():
+        data[row[0].strip().lower()] = row
+    return data
+
+hebrew_clause_dat = hebrew_clause_data()
+
+@cache
+def hebrew_strongs_data():
+    return get_hebrew_strongs_data()
+
+hebrew_strongs_dat = hebrew_strongs_data()
+
+donepreload = time.time()
+print("done!")
+print(f"preload time: {donepreload - preloadtime}")
 
 @dataclass(init=False)
 class GreekWord:
@@ -118,8 +186,66 @@ class GreekWord:
         self.PMpWord, self.PMfWord = csvdata[11][1:-1].split('｜')
         self.Note, self.Mvar, self.Mlexeme, self.Mrmac, self.Msn, self.MTBESG = csvdata[12][1:-1].split('｜')
 
+        self.DEF = self.TBESG
+
+        self.badStrongs = self.sn not in greek_strongs_dat.keys()
+
     def __hash__(self):
         return hash(self.__repr__())
+
+@dataclass(init=False)
+class HebrewWord:
+    BHSwordSort: int; paragraphMarker: str; poetryMarker: str; KJVverseSort: int; KJVbook: int; KJVchapter: int
+    KJVverse: int; BHSverseSort: int; BHSbook: int; BHSchapter: int; BHSverse: int; clauseID: str; clauseKind: str
+    clauseType: str; language: str; BHSwordPointed: str; BHSwordConsonantal: str; SBLstyleTransliteration: str
+    poneticTranscription: str; HebrewLexeme: str; lexemeID: str; sn: str; extendedStrongNumber: str
+    morphologyCode: str; morphologyDetail: str; ETCBCgloss: str; extendedGloss: str; BSBsort: float; BSB: str
+
+    def __init__(self, csvdata, lastSort=99999.0):
+        # BHSwordSort	paragraphMarker	poetryMarker	〔KJVverseSort｜KJVbook｜KJVchapter｜KJVverse〕	〔BHSverseSort｜BHSbook｜BHSchapter｜BHSverse〕	clauseID	clauseKind	clauseType	language	BHSwordPointed	BHSwordConsonantal	SBLstyleTransliteration	poneticTranscription	HebrewLexeme	lexemeID	StrongNumber	extendedStrongNumber	morphologyCode	morphologyDetail	ETCBCgloss	extendedGloss	〔BSBsort＠BSB〕
+        self.BHSwordSort = int(csvdata[0])
+        self.paragraphMarker = csvdata[1]
+        self.poetryMarker = csvdata[2]
+        self.KJVverseSort, self.KJVbook, self.KJVchapter, self.KJVverse = map(int, csvdata[3][1:-1].split('｜'))
+        self.BHSverseSort, self.BHSbook, self.BHSchapter, self.BHSverse = map(int, csvdata[4][1:-1].split('｜'))
+        self.clauseID = csvdata[5]
+        self.clauseKind = csvdata[6]
+        self.clauseType = csvdata[7]
+        self.language = csvdata[8]
+        if self.language != 'Hebrew':
+            raise ValueError("Not a Hebrew word, language = " + self.language)
+        self.BHSwordPointed = csvdata[9]
+        self.BHSwordConsonantal = csvdata[10]
+        self.SBLstyleTransliteration = csvdata[11]
+        self.poneticTranscription = csvdata[12]
+        self.HebrewLexeme = csvdata[13]
+        self.lexemeID = csvdata[14]
+        self.sn = csvdata[15]
+        self.extendedStrongNumber = csvdata[16]
+        if len(self.sn) == 0:
+            self.sn = self.extendedStrongNumber
+        self.morphologyCode = csvdata[17]
+        self.morphologyDetail = csvdata[18]
+        self.ETCBCgloss = csvdata[19]
+        self.extendedGloss = csvdata[20]
+        if '＠' not in csvdata[21]:
+            self.BSBsort = lastSort
+            self.BSB = '-'
+        else:
+            self.BSBsort, self.BSB = csvdata[21][1:-1].split('＠')
+            self.BSBsort = int(self.BSBsort)
+
+        self.transSBLcap = self.SBLstyleTransliteration
+        self.lexeme = self.HebrewLexeme[5:-6]
+        self.TBESG = self.ETCBCgloss
+        self.ST = self.BSB
+
+        self.badStrongs = self.sn not in hebrew_strongs_dat.keys()
+
+        self.DEF = self.extendedGloss
+    def __hash__(self):
+        return hash(self.__repr__())
+
 
 @dataclass(init=False)
 class GreekVerse:
@@ -149,7 +275,7 @@ class GreekVerse:
         ids = list(dict.fromkeys(ids))
         final = ""
         for id in ids:
-            row = eng_dat.get(id, None)
+            row = greek_clause_dat.get(id, None)
             if row:
                 final += row[3] + ' '
         return final
@@ -157,26 +283,30 @@ class GreekVerse:
 
     def LT(self):
         # for each word in the verse, get the LevinsionClauseID
-        ids = set()
-        for word in self.words:
+        ids = list()
+        copy = GreekVerse(self.words)
+        copy.sort_lt()
+        for word in copy.words:
             ids.add(word.LevinsohnClauseID.strip().lower())
         # get the English translation of the verse
         final = ""
         for id in ids:
-            row = eng_dat.get(id, None)
+            row = greek_clause_dat.get(id, None)
             if row:
                 final += row[2] + ' '
         return final
 
     def IT(self):
         # for each word in the verse, get the LevinsionClauseID
-        ids = set()
-        for word in self.words:
+        ids = list()
+        copy = GreekVerse(self.words)
+        copy.sort_lt()
+        for word in copy.words:
             ids.add(word.LevinsohnClauseID.strip().lower())
         # get the English translation of the verse
         final = ""
         for id in ids:
-            row = eng_dat.get(id, None)
+            row = greek_clause_dat.get(id, None)
             if row:
                 final += row[1] + ' '
         return final
@@ -185,41 +315,37 @@ class GreekVerse:
         return hash(self.__repr__())
 
 @dataclass(init=False)
-class GreekSection:
-    verses: list[GreekVerse]; book: int; chapter: int
-    def __init__(self, verses):
-        self.verses: list[GreekVerse] = verses
-        # make sure all the verses are in the same chapter and book
-        for verse in verses:
-            if verse.book != verses[0].book or verse.chapter != verses[0].chapter:
-                raise ValueError("All verses must be in the same chapter")
-        self.book = verses[0].book
-        self.chapter = verses[0].chapter
+class HebrewVerse:
+    words: list[HebrewWord]; book: int; chapter: int; verse_num: int
+    def __init__(self, words):
+        self.words: list[HebrewWord] = words
+        # make sure all the words are in the same verse, chapter, and book
+        for word in words:
+            if word.BHSbook != words[0].BHSbook or word.BHSchapter != words[0].BHSchapter or word.BHSverse != words[0].BHSverse:
+                raise ValueError("All words must be in the same verse")
+        self.book = words[0].BHSbook
+        self.chapter = words[0].BHSchapter
+        self.verse_num = words[0].BHSverse
+
+    def sort_st(self):
+        self.words.sort(key=lambda x: x.BSBsort)
 
     def ST(self):
+        ids = list()
+        copy = HebrewVerse(self.words)
+        copy.sort_st()
+        for word in copy.words:
+            ids.append(word.clauseID.strip().lower())
+        ids = list(dict.fromkeys(ids))
         final = ""
-        for verse in self.verses:
-            final += verse.ST()
+        for id in ids:
+            row = hebrew_clause_dat.get(id, None)
+            if row:
+                final += row[3] + ' '
         return final
-
-    def LT(self):
-        final = ""
-        for verse in self.verses:
-            final += verse.LT()
-        return final
-
-    def IT(self):
-        final = ""
-        for verse in self.verses:
-            final += verse.IT()
-        return final
-
-    def words(self):
-        return [word for verse in self.verses for word in verse.words]
 
     def __hash__(self):
         return hash(self.__repr__())
-
 
 
 
@@ -235,8 +361,20 @@ class GreekChapter:
         self.book = verses[0].book
         self.chapter = verses[0].chapter
 
-    def range(self, start: int, end: int):
-        return GreekSection(self.verses[start:end])
+    def __hash__(self):
+        return hash(self.__repr__())
+
+@dataclass(init=False)
+class HebrewChapter:
+    verses: list[HebrewVerse]; book: int; chapter: int
+    def __init__(self, verses):
+        self.verses: list[HebrewVerse] = verses
+        # make sure all the verses are in the same chapter and book
+        for verse in verses:
+            if verse.book != verses[0].book or verse.chapter != verses[0].chapter:
+                raise ValueError("All verses must be in the same chapter")
+        self.book = verses[0].book
+        self.chapter = verses[0].chapter
 
     def __hash__(self):
         return hash(self.__repr__())
@@ -266,9 +404,37 @@ def get_greek_chapter(book: int, chapter: int) -> GreekChapter:
         verses.append(GreekVerse(cur_verse))
     return GreekChapter(verses)
 
+@mem_cache
+def get_hebrew_chapter(book: int, chapter: int) -> HebrewChapter:
+    print("loading hebrew chapter")
+    words = []
+    last_sort = 0
+    for row in hebrew_dat:
+        word = HebrewWord(row, float(last_sort) - 0.5)
+        last_sort = word.BHSwordSort
+        if word.BHSbook == book and word.BHSchapter == chapter:
+            words.append(word)
+        elif word.BHSbook > book or (word.BHSbook == book and word.BHSchapter > chapter):
+            break
+    # group the words into verses
+    verses = []
+    cur_verse = []
+    if not words:
+        raise ValueError(f"Chapter {chapter} not found in book {book}")
+    verse_num = words[0].BHSverse
+    for word in words:
+        if word.BHSverse != verse_num:
+            verses.append(HebrewVerse(cur_verse))
+            cur_verse = []
+            verse_num = word.BHSverse
+        cur_verse.append(word)
+    if cur_verse:
+        verses.append(HebrewVerse(cur_verse))
+    return HebrewChapter(verses)
+
 @dataclass(init=False)
-class StrongsDefinition:
-    strongs: int; greek: str; translit: str; pronunciation: str; strongs_str: str; kjv_def: str
+class GreekStrongs:
+    strongs: int; lex: str; translit: str; pronunciation: str; strongs_str: str; kjv_def: str
     def __init__(self, number):
         # use strongsgreek.xml to get the definition of the strongs number
         if isinstance(number, int):
@@ -281,11 +447,11 @@ class StrongsDefinition:
         else:
             raise ValueError("Invalid input")
         n = "G" + str(num)
-        data = strongs_dat
+        data = greek_strongs_dat
         if n in data:
             entry: dict = data[n]
             self.strongs = num
-            self.greek = entry.get('lemma', '')
+            self.lex = entry.get('lemma', '')
             self.translit = entry.get('translit', '')
             self.pronunciation = entry.get('pronunciation', '')
             self.derv = entry.get('derivation', '')
@@ -299,6 +465,74 @@ class StrongsDefinition:
                 self.strongs_str += f'{self.strg}'
             self.kjv_def = entry.get('kjv_def', '')
 
+    def __hash__(self):
+        return hash(self.__repr__())
+
+@dataclass(init=False)
+class HebrewStrongs:
+    strongs: int; lex: str; translit: str; pronunciation: str; strongs_str: str; kjv_def: str
+    def __init__(self, number):
+        if isinstance(number, int):
+            num = number
+        elif isinstance(number, str):
+            if number[0] == 'H':
+                num = int(number[1:])
+            else:
+                num = int(number)
+        else:
+            raise ValueError("Invalid input")
+
+        n = 'H' + str(num)
+        data = hebrew_strongs_dat
+        if n in data:
+            entry: dict = data[n]
+            self.strongs = num
+            self.lex = entry.get('lemma', '')
+            self.translit = entry.get('xlit', '')
+            self.pronunciation = entry.get('pron', '')
+            self.derv = entry.get('derivation', '')
+            self.strg = entry.get('strongs_def', '')
+            self.strongs_str = ''
+            if self.derv:
+                self.strongs_str += f'{self.derv}'
+            if self.strg:
+                if self.derv:
+                    self.strongs_str += f' '
+                self.strongs_str += f'{self.strg}'
+            self.kjv_def = entry.get('kjv_def', '')
+        else:
+            self.strongs = num
+            self.lex = ''
+            self.translit = ''
+            self.pronunciation = ''
+            self.strongs_str = ''
+            self.kjv_def = ''
+
+
+
+def get_strongs(number, debug=None):
+    if isinstance(number, str):
+        if len(number) == 0:
+            if debug is not None:
+                print(debug)
+            raise ValueError("Invalid input")
+        if number[0] == "G":
+            return GreekStrongs(number)
+        elif number[0] == "H":
+            return HebrewStrongs(number)
+        else:
+            if debug is not None:
+                print(debug)
+            raise ValueError("Invalid input")
+
+def get_chapter(book: int, chapter: int):
+    if is_new_testament(book):
+        return get_greek_chapter(book, chapter)
+    else:
+        return get_hebrew_chapter(book, chapter)
+
+    def __hash__(self):
+        return hash(self.__repr__())
 
 def is_new_testament(book):
     if isinstance(book, int):
@@ -317,9 +551,9 @@ def get_book_sizes():
     return [50, 40, 27, 36, 34, 24, 21, 4, 31, 24, 22, 25, 29, 36, 10, 13, 10, 42, 150, 31, 12, 8, 66, 52, 5, 48, 12, 14, 3, 9, 1, 4, 7, 3, 3, 3, 2, 14, 4, 28, 16, 24, 21, 28, 16, 16, 13, 6, 6, 4, 4, 5, 3, 6, 4, 3, 1, 13, 5, 5, 3, 5, 1, 1, 1, 22]
 
 @mem_cache
-def to_html(verses):
+def to_html(ch):
     print("building html...")
     main = ""
-    for verse in verses.verses:
+    for verse in ch.verses:
         main += f"""<span class="verse" id="verse{verse.verse_num}"><b>{verse.verse_num}</b> {verse.ST()}</span>"""
     return main

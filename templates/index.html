@@ -23,9 +23,7 @@
         <form id="form">
         <select id="book">
             {% for i, name in book_enum %}
-                {% if is_new_testament(i+1) %}
-                    <option value="{{ i+1 }}">{{ name }}</option>
-                {% endif %}
+                <option value="{{ i+1 }}">{{ name }}</option>
             {% endfor %}
         </select>
         <input type="number" id="chapter" min="1" value="1">
