@@ -287,7 +287,7 @@ class HebrewWord:
         self.clauseKind = csvdata[6]
         self.clauseType = csvdata[7]
         self.language = csvdata[8]
-        if self.language != 'Hebrew':
+        if self.language != 'Hebrew' and self.language != 'Aramaic':
             raise ValueError("Not a Hebrew word, language = " + self.language)
         self.BHSwordPointed = csvdata[9]
         self.BHSwordConsonantal = csvdata[10]
